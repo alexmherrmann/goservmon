@@ -1,11 +1,12 @@
 package data
 
-
 type DataPoint struct {
-	value float32
+	Value  float32
+	Metric string
 }
 
 type DataSource interface {
-	DataChan() (chan DataPoint)
+	DataChan() chan DataPoint
 	GetAllAvailablePoints() []DataPoint
+	Close()
 }

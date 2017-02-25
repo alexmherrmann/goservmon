@@ -1,17 +1,26 @@
 package main
 
 import (
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"os"
 	"./servmon"
 	"./servmon/data"
-	"golang.org/x/crypto/ssh/terminal"
-	"syscall"
-	"fmt"
-	"log"
 	"./servmon/util"
+	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"log"
+	"os"
+	"syscall"
+
+	"github.com/gizak/termui"
 )
+
+func gaugeModifier(g *termui.Gauge, source data.DataSource) {
+	for datapoint := range source.DataChan() {
+		g.Label = datapoint.Metric
+		g.Percent = datapoint.Value / 8
+	}
+}
 
 func main() {
 	settingsFile, err := os.Open("settings.yaml")
@@ -32,11 +41,10 @@ func main() {
 	serverToGet := config.Servers[0]
 	log.Printf("Getting CPU load for %s\n", serverToGet)
 
-	serverDataSource, err := data.GetNewLinuxDataSource(serverToGet, config.Username, config.Password)
+	serverDataSource, err := data.GetNewLinuxDataSource8Processors(serverToGet, config.Username, config.Password)
 	util.HandleError(err)
 	load := serverDataSource.GetMostRecentLoad()
 
 	log.Printf("Got load %f\n", load)
-
 
 }

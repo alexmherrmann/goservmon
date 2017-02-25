@@ -1,33 +1,52 @@
 package data
 
 import (
-	"golang.org/x/crypto/ssh"
 	"../util"
 	"bytes"
+	"fmt"
+	"golang.org/x/crypto/ssh"
 	"log"
 	"strings"
-	"fmt"
 )
 
 /*
 A linux data source
 Does not store passwords in memory long-term for safety reasons, creates the connection and holds onto it
- */
+*/
 type LinuxDataSource struct {
-	hostname string
-	client *ssh.Client
+	hostname   string
+	client     *ssh.Client
+	dataChan   chan DataPoint
+	processors float32
 }
 
-type LinuxDataSourceConnectionError struct {
-	originalMsg string
+// Close the channel and ssh client
+func (l *LinuxDataSource) Close() {
+	close(l.dataChan)
+	l.client.Close()
 }
 
-func (l LinuxDataSourceConnectionError) Error() string {
-	return l.originalMsg
+const (
+	// one minute average
+	min1 int = iota
+	// 5 minute average
+	min5
+	// 10 minute average
+	min10
+)
+
+func (source *LinuxDataSource) GetNewSession() (*ssh.Session, error) {
+	// TODO: error handling
+	sesh, _ := source.client.NewSession()
+
+	return sesh, nil
+
 }
 
-
-func (dataSource *LinuxDataSource) GetMostRecentLoad() float32 {
+/*
+TODO: implement which loadavg to select
+*/
+func (dataSource *LinuxDataSource) GetMostRecentLoad(avg int) float32 {
 
 	//TODO: implement error handling
 	newSesh, err := dataSource.client.NewSession()
@@ -42,17 +61,28 @@ func (dataSource *LinuxDataSource) GetMostRecentLoad() float32 {
 
 	log.Printf("Got [%s] for loadavg", strings.Trim(readBytes.String(), "\n"))
 
-	var min1, min2, min3 float32
+	var avg1, avg2, avg3 float32
 
-	fmt.Sscanf(readBytes.String(), "%f %f %f", &min1, &min2, &min3)
+	fmt.Sscanf(readBytes.String(), "%f %f %f", &avg1, &avg2, &avg3)
 
-	log.Printf("got %f, %f, %f", min1, min2, min3)
+	log.Printf("got %f, %f, %f", avg1, avg2, avg3)
 
-	return 0.8
+	switch avg {
+	case min1:
+		return avg1
+
+	default:
+		fallthrough
+	case min5:
+		return avg2
+
+	case min10:
+		return avg3
+	}
 }
 
-func (dataSource *LinuxDataSource) DataChan() (chan DataPoint) {
-	panic("implement me")
+func (dataSource *LinuxDataSource) DataChan() chan DataPoint {
+	return dataSource.dataChan
 }
 
 func (dataSource *LinuxDataSource) GetAllAvailablePoints() []DataPoint {
@@ -60,17 +90,22 @@ func (dataSource *LinuxDataSource) GetAllAvailablePoints() []DataPoint {
 }
 
 // TODO: implement error handling for real
-func GetNewLinuxDataSource(hostname string, username string, password string) (LinuxDataSource, error) {
+func GetNewLinuxDataSource(hostname string, username string, password string, processors int) (LinuxDataSource, error) {
 	toReturn := LinuxDataSource{}
 
 	config := &ssh.ClientConfig{
-		User:username,
-		Auth: []ssh.AuthMethod { ssh.Password(password) },
+		User: username,
+		Auth: []ssh.AuthMethod{ssh.Password(password)},
 	}
 
 	client, err := ssh.Dial("tcp", hostname, config)
 	util.HandleError(err)
 	toReturn.client = client
+	toReturn.processors = float32(processors)
 
 	return toReturn, nil
+}
+
+func GetNewLinuxDataSource8Processors(hostname string, username string, password string) (LinuxDataSource, error) {
+	return GetNewLinuxDataSource(hostname, username, password, 8)
 }
