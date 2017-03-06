@@ -28,11 +28,11 @@ func (l *LinuxDataSource) Close() {
 
 const (
 	// one minute average
-	min1 int = iota
-	// 5 minute average
-	min5
+	Min1 int = iota
+	// / 5 minute average
+	Min5
 	// 10 minute average
-	min10
+	Min10
 )
 
 func (source *LinuxDataSource) GetNewSession() (*ssh.Session, error) {
@@ -68,15 +68,15 @@ func (dataSource *LinuxDataSource) GetMostRecentLoad(avg int) float32 {
 	log.Printf("got %f, %f, %f", avg1, avg2, avg3)
 
 	switch avg {
-	case min1:
+	case Min1:
 		return avg1
 
 	default:
 		fallthrough
-	case min5:
+	case Min5:
 		return avg2
 
-	case min10:
+	case Min10:
 		return avg3
 	}
 }
