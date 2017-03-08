@@ -1,11 +1,11 @@
 package util
 
 import (
-	"testing"
-	"os"
-	"io/ioutil"
-	"fmt"
 	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"testing"
 )
 
 func TestGetNumberOfCores(t *testing.T) {

@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
-	"strings"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -17,7 +15,7 @@ type LinuxDataSource struct {
 	hostname   string
 	client     *ssh.Client
 	dataChan   chan DataPoint
-	processors float32
+	Processors float32
 }
 
 // Close the channel and ssh client
@@ -57,6 +55,7 @@ GetMostRecentLoad gets the most recent load avg for the system configured
 */
 func (dataSource *LinuxDataSource) GetMostRecentLoad(avg int) (float32, error) {
 
+	DataLogger.Println("Beginning loadavg get")
 	//TODO: implement error handling
 	newSesh, err := dataSource.client.NewSession()
 	if err != nil {
@@ -72,13 +71,13 @@ func (dataSource *LinuxDataSource) GetMostRecentLoad(avg int) (float32, error) {
 		return -1, ErrGetLoad
 	}
 
-	log.Printf("Got [%s] for loadavg", strings.Trim(readBytes.String(), "\n"))
+	//DataLogger.Printf("Got [%s] for loadavg", strings.Trim(readBytes.String(), "\n"))
 
 	var avg1, avg2, avg3 float32
 
 	fmt.Sscanf(readBytes.String(), "%f %f %f", &avg1, &avg2, &avg3)
 
-	log.Printf("got %f, %f, %f", avg1, avg2, avg3)
+	DataLogger.Printf("got %f, %f, %f", avg1, avg2, avg3)
 
 	switch avg {
 	case Min1:
@@ -125,7 +124,7 @@ func GetNewLinuxDataSource(hostname string, username string, password string, pr
 		return nil, ErrCouldNotDialSSH
 	}
 	toReturn.client = client
-	toReturn.processors = float32(processors)
+	toReturn.Processors = float32(processors)
 
 	return toReturn, nil
 }

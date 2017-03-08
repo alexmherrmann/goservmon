@@ -8,5 +8,6 @@ type DataPoint struct {
 type DataSource interface {
 	DataChan() chan DataPoint
 	GetAllAvailablePoints() []DataPoint
+	GetMostRecentPoint() DataPoint
 	Close()
 }

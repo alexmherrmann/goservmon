@@ -13,15 +13,24 @@ type TrackerPair struct {
 
 var tracker struct {
 	Pairs []TrackerPair
+	rows []*ui.Row
 }
 
 // RegisterServer takes a LinuxDataSource and adds it to the track list
 func RegisterServer(source *data.LinuxDataSource) {
-	pairs := append(tracker.Pairs, TrackerPair{Source: source, Gauge: ui.NewGauge()})
+	pair := TrackerPair{Source: source, Gauge: ui.NewGauge()}
+	pairs := append(tracker.Pairs, pair)
 	tracker.Pairs = pairs
+	tracker.rows = append(tracker.rows, ui.NewRow(
+		ui.NewCol(12, 0, pair.Gauge),
+	))
 }
 
 // GetPairs just returns all of the TrackerPairs
 func GetPairs() []TrackerPair {
 	return tracker.Pairs
+}
+
+func GetRows() []*ui.Row {
+	return tracker.rows
 }
